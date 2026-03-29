@@ -245,7 +245,7 @@
 
 <script>
   // ---- データ管理 ----
-  const STORAGE_KEY = 'buyback_tracker_v3';
+  const STORAGE_KEY = 'buyback_tracker_v4';
 
   function load() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { products: [], buybacks: [] }; }
@@ -310,12 +310,60 @@
     { id: 'p040', name: 'FUJIFILM チェキ用フィルム 20枚入',              genre: 'other', price: 1980,   jan: '4547410377231' },
     { id: 'p041', name: 'フジカラー 写ルンです',                          genre: 'other', price: 1650,   jan: '4547410550955' },
     { id: 'p042', name: 'instax mini 12 チェキ 白',                      genre: 'other', price: 14300,  jan: '4547410489149' },
+    { id: 'p043', name: 'ぽこ あ ポケモン/Switch 2',                      genre: 'sw',    price: 0,      jan: '4521329460420' },
+  ];
+
+  // ---- 初期買取データ（2026-03-29時点の最高買取価格） ----
+  const INITIAL_BUYBACKS = [
+    { id: 'b001', productId: 'p001', date: '2026-03-29', price: 45000  },
+    { id: 'b002', productId: 'p002', date: '2026-03-29', price: 52000  },
+    { id: 'b003', productId: 'p003', date: '2026-03-29', price: 44500  },
+    { id: 'b004', productId: 'p004', date: '2026-03-29', price: 42300  },
+    { id: 'b005', productId: 'p005', date: '2026-03-29', price: 40400  },
+    { id: 'b006', productId: 'p006', date: '2026-03-29', price: 33800  },
+    { id: 'b007', productId: 'p007', date: '2026-03-29', price: 33800  },
+    { id: 'b008', productId: 'p008', date: '2026-03-29', price: 23050  },
+    { id: 'b009', productId: 'p009', date: '2026-03-29', price: 8950   },
+    { id: 'b010', productId: 'p010', date: '2026-03-29', price: 8200   },
+    { id: 'b011', productId: 'p011', date: '2026-03-29', price: 81000  },
+    { id: 'b012', productId: 'p012', date: '2026-03-29', price: 68000  },
+    { id: 'b013', productId: 'p013', date: '2026-03-29', price: 117000 },
+    { id: 'b014', productId: 'p014', date: '2026-03-29', price: 30500  },
+    { id: 'b015', productId: 'p015', date: '2026-03-29', price: 9250   },
+    { id: 'b016', productId: 'p016', date: '2026-03-29', price: 53000  },
+    { id: 'b017', productId: 'p017', date: '2026-03-29', price: 62500  },
+    { id: 'b018', productId: 'p018', date: '2026-03-29', price: 86100  },
+    { id: 'b019', productId: 'p019', date: '2026-03-29', price: 75100  },
+    { id: 'b020', productId: 'p020', date: '2026-03-29', price: 26600  },
+    { id: 'b021', productId: 'p021', date: '2026-03-29', price: 40500  },
+    { id: 'b022', productId: 'p022', date: '2026-03-29', price: 41600  },
+    { id: 'b023', productId: 'p023', date: '2026-03-29', price: 124200 },
+    { id: 'b024', productId: 'p024', date: '2026-03-29', price: 197000 },
+    { id: 'b025', productId: 'p025', date: '2026-03-29', price: 222000 },
+    { id: 'b026', productId: 'p026', date: '2026-03-29', price: 215000 },
+    { id: 'b027', productId: 'p027', date: '2026-03-29', price: 243000 },
+    { id: 'b028', productId: 'p028', date: '2026-03-29', price: 272000 },
+    { id: 'b029', productId: 'p029', date: '2026-03-29', price: 135000 },
+    { id: 'b030', productId: 'p030', date: '2026-03-29', price: 159000 },
+    { id: 'b031', productId: 'p031', date: '2026-03-29', price: 178500 },
+    { id: 'b032', productId: 'p032', date: '2026-03-29', price: 188000 },
+    { id: 'b033', productId: 'p033', date: '2026-03-29', price: 213500 },
+    { id: 'b034', productId: 'p034', date: '2026-03-29', price: 21800  },
+    { id: 'b035', productId: 'p035', date: '2026-03-29', price: 22000  },
+    { id: 'b036', productId: 'p036', date: '2026-03-29', price: 65200  },
+    { id: 'b037', productId: 'p037', date: '2026-03-29', price: 74200  },
+    { id: 'b038', productId: 'p038', date: '2026-03-29', price: 42800  },
+    { id: 'b039', productId: 'p039', date: '2026-03-29', price: 54800  },
+    { id: 'b040', productId: 'p040', date: '2026-03-29', price: 2800   },
+    { id: 'b041', productId: 'p041', date: '2026-03-29', price: 2460   },
+    { id: 'b042', productId: 'p042', date: '2026-03-29', price: 12150  },
+    { id: 'b043', productId: 'p043', date: '2026-03-29', price: 7300   },
   ];
 
   function seedInitialData() {
     // キー自体が存在しない場合のみ初期データを投入する
     if (localStorage.getItem(STORAGE_KEY) !== null) return;
-    save({ products: INITIAL_PRODUCTS, buybacks: [] });
+    save({ products: INITIAL_PRODUCTS, buybacks: INITIAL_BUYBACKS });
   }
 
   function genreBadge(g) {
