@@ -241,7 +241,7 @@
 
 <script>
   // ---- データ管理 ----
-  const STORAGE_KEY = 'buyback_tracker_v1';
+  const STORAGE_KEY = 'buyback_tracker_v2';
 
   function load() {
     try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { products: [], buybacks: [] }; }
@@ -309,10 +309,9 @@
   ];
 
   function seedInitialData() {
-    const data = load();
-    if (data.products.length > 0) return; // すでにデータあり → スキップ
-    data.products = INITIAL_PRODUCTS;
-    save(data);
+    // キー自体が存在しない場合のみ初期データを投入する
+    if (localStorage.getItem(STORAGE_KEY) !== null) return;
+    save({ products: INITIAL_PRODUCTS, buybacks: [] });
   }
 
   function genreBadge(g) {
