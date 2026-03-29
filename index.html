@@ -346,6 +346,7 @@
       </button>
       <input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleFile(this.files[0])">
     </div>
+    <div id="errorBox" style="display:none; background:#fee2e2; border:1px solid #fca5a5; border-radius:8px; padding:14px 18px; color:#991b1b; white-space:pre-wrap; font-size:0.875rem; margin-bottom:16px;"></div>
     <div class="info-box">
       💡 <strong>CSVのエクスポート方法：</strong>
       Googleスプレッドシートを開き、「ファイル」→「ダウンロード」→「カンマ区切り形式（.csv）」を選択してください。
@@ -455,42 +456,81 @@ const COLORS = ['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be
 
 // ===== CSV Parsing =====
 function parseCSV(text) {
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
-  const rows = lines.map(line => parseCSVLine(line));
+  // Strip BOM (UTF-8 with BOM is common in Google Sheets CSV exports)
+  text = text.replace(/^\uFEFF/, '');
 
-  // Find header row: look for row containing "JANコード" or "JAN" + "品名"
+  // Normalize line endings (handle \r\n, \r, \n)
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+  const lines = text.split('\n').filter(l => l.trim());
+
+  if (lines.length === 0) {
+    throw new Error('ファイルが空です。CSVにデータが含まれているか確認してください。');
+  }
+
+  // Auto-detect separator: tab or comma
+  const sample = lines.slice(0, 3).join('\n');
+  const tabCount = (sample.match(/\t/g) || []).length;
+  const commaCount = (sample.match(/,/g) || []).length;
+  const sep = tabCount > commaCount ? '\t' : ',';
+
+  const rows = lines.map(line => parseCSVLine(line, sep));
+
+  // Find header row: look for "JANコード", "品名", "JAN" etc. in first 15 rows
   let headerRowIdx = -1;
-  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
     const r = rows[i];
-    const joined = r.join('').toLowerCase();
-    if (joined.includes('jan') || (r[0] && r[0].toString().includes('JAN'))) {
-      headerRowIdx = i;
-      break;
+    if (!r || r.length < 2) continue;
+    const joined = r.join('').toLowerCase().replace(/\s/g, '');
+    if (
+      joined.includes('janコード') ||
+      joined.includes('jan') ||
+      joined.includes('品名') ||
+      joined.includes('商品名')
+    ) {
+      // Confirm it looks like a header (has at least 3 non-empty cells)
+      const nonEmpty = r.filter(c => c && c.trim()).length;
+      if (nonEmpty >= 2) {
+        headerRowIdx = i;
+        break;
+      }
     }
   }
 
-  // If no explicit header found, try row 0
-  if (headerRowIdx === -1) headerRowIdx = 0;
+  // Fallback: use first row with enough columns
+  if (headerRowIdx === -1) {
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      if (rows[i] && rows[i].length >= 2) { headerRowIdx = i; break; }
+    }
+  }
 
-  // Try to find the "store name" row (row before header, may contain store labels)
-  let storeRowIdx = headerRowIdx - 1;
-  let storeRow = storeRowIdx >= 0 ? rows[storeRowIdx] : null;
+  if (headerRowIdx === -1 || !rows[headerRowIdx]) {
+    throw new Error(
+      `ヘッダー行が見つかりませんでした。\n` +
+      `CSVの先頭に「JANコード」「品名」などの列名があることを確認してください。\n` +
+      `（読み込んだ行数: ${rows.length}行、区切り文字: ${sep === '\t' ? 'タブ' : 'カンマ'}）`
+    );
+  }
+
+  // Try to find store-name row (row before header with store labels)
+  const storeRowIdx = headerRowIdx - 1;
+  const storeRow = storeRowIdx >= 0 ? rows[storeRowIdx] : null;
 
   const headerRow = rows[headerRowIdx];
 
   // Determine JAN column and name column
   let janCol = 0, nameCol = 1;
   for (let i = 0; i < headerRow.length; i++) {
-    const h = (headerRow[i] || '').toLowerCase();
+    const h = (headerRow[i] || '').toLowerCase().replace(/\s/g, '');
     if (h.includes('jan') || h.includes('コード') || h.includes('code')) janCol = i;
-    if (h.includes('品名') || h.includes('商品') || h.includes('name')) nameCol = i;
+    if (h.includes('品名') || h.includes('商品名') || h.includes('name')) nameCol = i;
   }
 
   // Columns from (nameCol+1) onwards are date/store columns
   const dateCols = [];
   for (let i = nameCol + 1; i < headerRow.length; i++) {
     let label = (headerRow[i] || '').trim();
-    // If there's a store row, prepend store name
+    // Prepend store name from the row above if available
     if (storeRow && storeRow[i] && storeRow[i].trim()) {
       const store = storeRow[i].trim();
       if (!label.includes(store)) label = store + (label ? ' ' + label : '');
@@ -498,23 +538,31 @@ function parseCSV(text) {
     if (label) dateCols.push({ col: i, label });
   }
 
+  if (dateCols.length === 0) {
+    // Last resort: use all columns after nameCol regardless of label
+    for (let i = nameCol + 1; i < headerRow.length; i++) {
+      dateCols.push({ col: i, label: `列${i + 1}` });
+    }
+  }
+
   // Parse data rows
   const dataRows = [];
   for (let i = headerRowIdx + 1; i < rows.length; i++) {
     const r = rows[i];
+    if (!r || r.length === 0) continue;
     const jan = (r[janCol] || '').trim();
     const name = (r[nameCol] || '').trim();
     if (!jan && !name) continue;
-    if (jan === 'JANコード' || jan === 'JAN') continue; // skip duplicate header
+    // Skip rows that look like duplicate headers
+    const janLower = jan.toLowerCase();
+    if (janLower === 'janコード' || janLower === 'jan' || janLower === 'コード') continue;
 
     const prices = dateCols.map(dc => {
-      const v = (r[dc.col] || '').replace(/[¥,￥\s]/g, '');
+      const raw = (r[dc.col] !== undefined ? r[dc.col] : '');
+      const v = raw.replace(/[¥,￥\s　]/g, '');
       const n = parseFloat(v);
       return isNaN(n) ? null : n;
     });
-
-    // Skip if all prices are null and no valid data
-    if (!jan && !name) continue;
 
     dataRows.push({ jan, name, prices });
   }
@@ -526,18 +574,24 @@ function parseCSV(text) {
   };
 }
 
-function parseCSVLine(line) {
+function parseCSVLine(line, sep = ',') {
+  // Fast path for tab-separated (no quoting complications usually)
+  if (sep === '\t') {
+    return line.split('\t').map(c => c.replace(/\r$/, ''));
+  }
   const result = [];
   let cur = '';
   let inQ = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
     if (c === '"') {
-      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
       else inQ = !inQ;
-    } else if (c === ',' && !inQ) {
+    } else if (c === sep && !inQ) {
       result.push(cur);
       cur = '';
+    } else if (c === '\r' && !inQ) {
+      // strip stray \r (shouldn't happen after normalize, but just in case)
     } else {
       cur += c;
     }
@@ -554,15 +608,20 @@ function handleFile(file) {
     try {
       parsedData = parseCSV(e.target.result);
       if (parsedData.rows.length === 0) {
-        alert('データが見つかりませんでした。CSVの形式を確認してください。');
+        showError('データ行が見つかりませんでした。\nヘッダー行の下にデータが存在するか確認してください。');
+        return;
+      }
+      if (parsedData.dates.length === 0) {
+        showError('価格列が見つかりませんでした。\nJANコード・品名の右側に日付や価格データがあることを確認してください。');
         return;
       }
       onDataLoaded();
     } catch (err) {
-      alert('CSVの読み込みに失敗しました: ' + err.message);
+      showError('CSVの読み込みに失敗しました:\n\n' + err.message);
       console.error(err);
     }
   };
+  // Try UTF-8 first; Google Sheets exports UTF-8 (with or without BOM)
   reader.readAsText(file, 'UTF-8');
 }
 
@@ -576,6 +635,15 @@ function onDataLoaded() {
   initColumnSelectors();
   renderChanges();
   renderCompare();
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.style.display = 'block';
+  // Auto-hide after 12s
+  clearTimeout(showError._t);
+  showError._t = setTimeout(() => { box.style.display = 'none'; }, 12000);
 }
 
 function resetData() {
@@ -608,8 +676,8 @@ function renderStats() {
   let upCount = 0, downCount = 0, sameCount = 0, noDataCount = 0;
 
   d.rows.forEach(row => {
-    const cur = row.prices[lastIdx];
-    const prev = prevIdx >= 0 ? row.prices[prevIdx] : null;
+    const cur = row.prices[lastIdx] ?? null;
+    const prev = prevIdx >= 0 ? (row.prices[prevIdx] ?? null) : null;
     if (cur === null) { noDataCount++; return; }
     if (prev === null) { sameCount++; return; }
     if (cur > prev) upCount++;
@@ -673,8 +741,8 @@ function renderChanges() {
   if (ths[4]) ths[4].textContent = labelB;
 
   let rows = d.rows.map(row => {
-    const prev = row.prices[colA];
-    const cur = row.prices[colB];
+    const prev = row.prices[colA] ?? null;
+    const cur = row.prices[colB] ?? null;
     let dir = 'nodata';
     let diff = null, pct = null;
     if (prev !== null && cur !== null) {
