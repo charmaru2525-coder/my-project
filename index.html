@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>買取価格比較表</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f0f2f5;
+      --surface: #ffffff;
+      --primary: #2563eb;
+      --primary-light: #dbeafe;
+      --up: #16a34a;
+      --up-bg: #dcfce7;
+      --down: #dc2626;
+      --down-bg: #fee2e2;
+      --neutral: #6b7280;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+
+    header h1 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    header .subtitle {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* Upload Zone */
+    .upload-zone {
+      background: var(--surface);
+      border: 2px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 48px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      margin-bottom: 24px;
+    }
+
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .upload-zone .icon { font-size: 3rem; margin-bottom: 12px; }
+    .upload-zone h2 { font-size: 1.1rem; margin-bottom: 8px; }
+    .upload-zone p { color: var(--text-muted); font-size: 0.9rem; }
+    .upload-zone input[type=file] { display: none; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: var(--primary); color: #fff; }
+    .btn-outline { background: #fff; color: var(--primary); border: 1px solid var(--primary); }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 6px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 6px;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: all 0.15s;
+    }
+
+    .tab.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* Stats bar */
+    .stats-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      border: 1px solid var(--border);
+    }
+
+    .stat-card .label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 4px; }
+    .stat-card .value { font-size: 1.5rem; font-weight: 700; }
+    .stat-card.up .value { color: var(--up); }
+    .stat-card.down .value { color: var(--down); }
+
+    /* Table */
+    .table-wrap {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      overflow: auto;
+      max-height: 600px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    thead th {
+      background: #f8fafc;
+      padding: 10px 14px;
+      text-align: left;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      white-space: nowrap;
+    }
+
+    tbody td {
+      padding: 9px 14px;
+      border-bottom: 1px solid #f3f4f6;
+      white-space: nowrap;
+    }
+
+    tbody tr:hover { background: #f9fafb; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    .badge-up { background: var(--up-bg); color: var(--up); }
+    .badge-down { background: var(--down-bg); color: var(--down); }
+    .badge-neutral { background: #f3f4f6; color: var(--neutral); }
+    .badge-nodata { background: #fef9c3; color: #92400e; }
+
+    .arrow-up::before { content: "▲ "; }
+    .arrow-down::before { content: "▼ "; }
+
+    /* Search */
+    .search-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .search-bar input {
+      flex: 1;
+      padding: 9px 14px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    .search-bar input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-light);
+    }
+
+    /* Filter row */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-row label { font-size: 0.85rem; color: var(--text-muted); }
+
+    .filter-row select {
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+      background: #fff;
+    }
+
+    /* Chart */
+    .chart-container {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      height: 380px;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 60px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .no-data .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* Comparison table extra */
+    .col-header-date { font-size: 0.75rem; color: var(--text-muted); }
+    .price-cell { text-align: right; font-variant-numeric: tabular-nums; }
+    .price-max { background: #fef9c3; font-weight: 700; }
+    .price-min { background: #dcfce7; }
+
+    /* Info box */
+    .info-box {
+      background: var(--primary-light);
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: #1e40af;
+      margin-bottom: 16px;
+    }
+
+    .product-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 999px;
+      padding: 4px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      margin: 4px;
+      cursor: pointer;
+      border: 1px solid #bfdbfe;
+    }
+
+    .product-chip:hover { background: var(--primary); color: #fff; }
+
+    #productChips { margin-bottom: 12px; }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .main { padding: 12px; }
+      .stats-bar { grid-template-columns: 1fr 1fr; }
+      .tabs { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>📊 買取価格比較表</h1>
+    <div class="subtitle">CSVをアップロードして価格を分析</div>
+  </div>
+  <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+    <span id="headerInfo" style="font-size:0.8rem; color:var(--text-muted);"></span>
+    <button class="btn btn-outline btn-sm" onclick="resetData()">🔄 リセット</button>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Upload Zone -->
+  <div id="uploadSection">
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('csvFile').click()">
+      <div class="icon">📂</div>
+      <h2>CSVファイルをドロップ、またはクリックして選択</h2>
+      <p>GoogleスプレッドシートからCSVエクスポートしたファイルをアップロード</p>
+      <br>
+      <button class="btn btn-primary" onclick="event.stopPropagation(); document.getElementById('csvFile').click()">
+        ファイルを選択
+      </button>
+      <input type="file" id="csvFile" accept=".csv,text/csv" onchange="handleFile(this.files[0])">
+    </div>
+    <div class="info-box">
+      💡 <strong>CSVのエクスポート方法：</strong>
+      Googleスプレッドシートを開き、「ファイル」→「ダウンロード」→「カンマ区切り形式（.csv）」を選択してください。
+      1行目にヘッダー（JANコード・品名・日付列）が含まれる形式に対応しています。
+    </div>
+  </div>
+
+  <!-- App content (hidden until CSV loaded) -->
+  <div id="appSection" style="display:none;">
+
+    <div class="stats-bar" id="statsBar"></div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('changes')">📈 価格変動一覧</button>
+      <button class="tab" onclick="switchTab('compare')">🏪 店舗・時系列比較</button>
+      <button class="tab" onclick="switchTab('graph')">📉 価格推移グラフ</button>
+    </div>
+
+    <!-- Tab 1: Price Changes -->
+    <div class="tab-panel active" id="tab-changes">
+      <div class="filter-row">
+        <label>絞り込み：</label>
+        <select id="changeFilter" onchange="renderChanges()">
+          <option value="all">すべて</option>
+          <option value="up">値上がり ▲</option>
+          <option value="down">値下がり ▼</option>
+          <option value="same">変動なし</option>
+        </select>
+        <label style="margin-left:8px;">比較：</label>
+        <select id="compareColA" onchange="renderChanges()"></select>
+        <span style="font-size:0.85rem;">→</span>
+        <select id="compareColB" onchange="renderChanges()"></select>
+        <span id="changeCount" style="margin-left:auto; font-size:0.85rem; color:var(--text-muted);"></span>
+      </div>
+      <div class="table-wrap">
+        <table id="changesTable">
+          <thead>
+            <tr>
+              <th>JANコード</th>
+              <th>品名</th>
+              <th>変動</th>
+              <th style="text-align:right;">前回価格</th>
+              <th style="text-align:right;">今回価格</th>
+              <th style="text-align:right;">差額</th>
+              <th style="text-align:right;">変動率</th>
+            </tr>
+          </thead>
+          <tbody id="changesTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 2: Store Comparison -->
+    <div class="tab-panel" id="tab-compare">
+      <div class="filter-row">
+        <label>商品を絞り込む：</label>
+        <input type="text" id="compareSearch" placeholder="商品名 or JANコードで検索..."
+               style="padding:7px 12px; border:1px solid var(--border); border-radius:6px; font-size:0.85rem; outline:none;"
+               oninput="renderCompare()">
+        <label style="margin-left:8px;">表示列数：</label>
+        <select id="compareCols" onchange="renderCompare()">
+          <option value="10">最新10件</option>
+          <option value="20">最新20件</option>
+          <option value="0">全列</option>
+        </select>
+        <label>
+          <input type="checkbox" id="highlightMinMax" onchange="renderCompare()" checked>
+          最高・最安値をハイライト
+        </label>
+      </div>
+      <div class="table-wrap">
+        <table id="compareTable">
+          <thead id="compareThead"></thead>
+          <tbody id="compareTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Price Graph -->
+    <div class="tab-panel" id="tab-graph">
+      <div class="search-bar">
+        <input type="text" id="graphSearch" placeholder="商品名 or JANコードで検索..." oninput="updateChips()">
+        <button class="btn btn-primary" onclick="addToGraph()">グラフに追加</button>
+        <button class="btn btn-outline" onclick="clearGraph()">クリア</button>
+      </div>
+      <div id="productChips"></div>
+      <div class="chart-container" id="chartContainer">
+        <div class="no-data" id="chartNoData">
+          <div class="icon">🔍</div>
+          <p>商品名で検索してグラフに追加してください</p>
+        </div>
+        <div class="chart-wrapper" id="chartWrapper" style="display:none;">
+          <canvas id="priceChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ===== State =====
+let parsedData = null; // { headers: [], dates: [], rows: [{jan, name, prices: []}] }
+let chart = null;
+let graphProducts = [];
+const COLORS = ['#2563eb','#dc2626','#16a34a','#d97706','#7c3aed','#0891b2','#be185d','#059669'];
+
+// ===== CSV Parsing =====
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const rows = lines.map(line => parseCSVLine(line));
+
+  // Find header row: look for row containing "JANコード" or "JAN" + "品名"
+  let headerRowIdx = -1;
+  for (let i = 0; i < Math.min(rows.length, 10); i++) {
+    const r = rows[i];
+    const joined = r.join('').toLowerCase();
+    if (joined.includes('jan') || (r[0] && r[0].toString().includes('JAN'))) {
+      headerRowIdx = i;
+      break;
+    }
+  }
+
+  // If no explicit header found, try row 0
+  if (headerRowIdx === -1) headerRowIdx = 0;
+
+  // Try to find the "store name" row (row before header, may contain store labels)
+  let storeRowIdx = headerRowIdx - 1;
+  let storeRow = storeRowIdx >= 0 ? rows[storeRowIdx] : null;
+
+  const headerRow = rows[headerRowIdx];
+
+  // Determine JAN column and name column
+  let janCol = 0, nameCol = 1;
+  for (let i = 0; i < headerRow.length; i++) {
+    const h = (headerRow[i] || '').toLowerCase();
+    if (h.includes('jan') || h.includes('コード') || h.includes('code')) janCol = i;
+    if (h.includes('品名') || h.includes('商品') || h.includes('name')) nameCol = i;
+  }
+
+  // Columns from (nameCol+1) onwards are date/store columns
+  const dateCols = [];
+  for (let i = nameCol + 1; i < headerRow.length; i++) {
+    let label = (headerRow[i] || '').trim();
+    // If there's a store row, prepend store name
+    if (storeRow && storeRow[i] && storeRow[i].trim()) {
+      const store = storeRow[i].trim();
+      if (!label.includes(store)) label = store + (label ? ' ' + label : '');
+    }
+    if (label) dateCols.push({ col: i, label });
+  }
+
+  // Parse data rows
+  const dataRows = [];
+  for (let i = headerRowIdx + 1; i < rows.length; i++) {
+    const r = rows[i];
+    const jan = (r[janCol] || '').trim();
+    const name = (r[nameCol] || '').trim();
+    if (!jan && !name) continue;
+    if (jan === 'JANコード' || jan === 'JAN') continue; // skip duplicate header
+
+    const prices = dateCols.map(dc => {
+      const v = (r[dc.col] || '').replace(/[¥,￥\s]/g, '');
+      const n = parseFloat(v);
+      return isNaN(n) ? null : n;
+    });
+
+    // Skip if all prices are null and no valid data
+    if (!jan && !name) continue;
+
+    dataRows.push({ jan, name, prices });
+  }
+
+  return {
+    janCol, nameCol,
+    dates: dateCols.map(d => d.label),
+    rows: dataRows
+  };
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let cur = '';
+  let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') {
+      if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+      else inQ = !inQ;
+    } else if (c === ',' && !inQ) {
+      result.push(cur);
+      cur = '';
+    } else {
+      cur += c;
+    }
+  }
+  result.push(cur);
+  return result;
+}
+
+// ===== File Handling =====
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      parsedData = parseCSV(e.target.result);
+      if (parsedData.rows.length === 0) {
+        alert('データが見つかりませんでした。CSVの形式を確認してください。');
+        return;
+      }
+      onDataLoaded();
+    } catch (err) {
+      alert('CSVの読み込みに失敗しました: ' + err.message);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function onDataLoaded() {
+  document.getElementById('uploadSection').style.display = 'none';
+  document.getElementById('appSection').style.display = 'block';
+  document.getElementById('headerInfo').textContent =
+    `${parsedData.rows.length}件 / ${parsedData.dates.length}列`;
+
+  renderStats();
+  initColumnSelectors();
+  renderChanges();
+  renderCompare();
+}
+
+function resetData() {
+  parsedData = null;
+  graphProducts = [];
+  if (chart) { chart.destroy(); chart = null; }
+  document.getElementById('uploadSection').style.display = 'block';
+  document.getElementById('appSection').style.display = 'none';
+  document.getElementById('csvFile').value = '';
+  document.getElementById('headerInfo').textContent = '';
+}
+
+// ===== Drag and Drop =====
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+// ===== Stats =====
+function renderStats() {
+  const d = parsedData;
+  const lastIdx = d.dates.length - 1;
+  const prevIdx = d.dates.length - 2;
+
+  let upCount = 0, downCount = 0, sameCount = 0, noDataCount = 0;
+
+  d.rows.forEach(row => {
+    const cur = row.prices[lastIdx];
+    const prev = prevIdx >= 0 ? row.prices[prevIdx] : null;
+    if (cur === null) { noDataCount++; return; }
+    if (prev === null) { sameCount++; return; }
+    if (cur > prev) upCount++;
+    else if (cur < prev) downCount++;
+    else sameCount++;
+  });
+
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat-card">
+      <div class="label">総商品数</div>
+      <div class="value">${d.rows.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">価格データ列数</div>
+      <div class="value">${d.dates.length}</div>
+    </div>
+    <div class="stat-card up">
+      <div class="label">▲ 値上がり</div>
+      <div class="value">${upCount}</div>
+    </div>
+    <div class="stat-card down">
+      <div class="label">▼ 値下がり</div>
+      <div class="value">${downCount}</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">変動なし</div>
+      <div class="value" style="color:var(--neutral)">${sameCount}</div>
+    </div>
+  `;
+}
+
+// ===== Tab 1: Price Changes =====
+function initColumnSelectors() {
+  const d = parsedData;
+  const selA = document.getElementById('compareColA');
+  const selB = document.getElementById('compareColB');
+  selA.innerHTML = '';
+  selB.innerHTML = '';
+  d.dates.forEach((dt, i) => {
+    selA.innerHTML += `<option value="${i}">${dt}</option>`;
+    selB.innerHTML += `<option value="${i}">${dt}</option>`;
+  });
+  // Default: compare last two columns
+  if (d.dates.length >= 2) {
+    selA.value = d.dates.length - 2;
+    selB.value = d.dates.length - 1;
+  }
+}
+
+function renderChanges() {
+  const d = parsedData;
+  const filter = document.getElementById('changeFilter').value;
+  const colA = parseInt(document.getElementById('compareColA').value) || 0;
+  const colB = parseInt(document.getElementById('compareColB').value) || 0;
+  const labelA = d.dates[colA] || '前回';
+  const labelB = d.dates[colB] || '今回';
+
+  // Update header
+  const ths = document.querySelectorAll('#changesTable thead th');
+  if (ths[3]) ths[3].textContent = labelA;
+  if (ths[4]) ths[4].textContent = labelB;
+
+  let rows = d.rows.map(row => {
+    const prev = row.prices[colA];
+    const cur = row.prices[colB];
+    let dir = 'nodata';
+    let diff = null, pct = null;
+    if (prev !== null && cur !== null) {
+      diff = cur - prev;
+      pct = prev !== 0 ? (diff / prev * 100) : null;
+      dir = diff > 0 ? 'up' : diff < 0 ? 'down' : 'same';
+    } else if (cur !== null && prev === null) {
+      dir = 'new';
+    }
+    return { ...row, prev, cur, diff, pct, dir };
+  });
+
+  if (filter !== 'all') rows = rows.filter(r => r.dir === filter);
+
+  // Sort: up first, then down, then same, then nodata
+  const order = { up: 0, down: 1, same: 2, new: 3, nodata: 4 };
+  rows.sort((a, b) => {
+    if (order[a.dir] !== order[b.dir]) return order[a.dir] - order[b.dir];
+    return Math.abs(b.diff || 0) - Math.abs(a.diff || 0);
+  });
+
+  document.getElementById('changeCount').textContent = `${rows.length}件表示中`;
+
+  const tbody = document.getElementById('changesTbody');
+  tbody.innerHTML = rows.map(row => {
+    let badge = '';
+    if (row.dir === 'up') badge = `<span class="badge badge-up arrow-up">${fmt(row.diff)}</span>`;
+    else if (row.dir === 'down') badge = `<span class="badge badge-down arrow-down">${fmt(row.diff)}</span>`;
+    else if (row.dir === 'same') badge = `<span class="badge badge-neutral">変動なし</span>`;
+    else if (row.dir === 'new') badge = `<span class="badge badge-nodata">新規</span>`;
+    else badge = `<span class="badge badge-nodata">データなし</span>`;
+
+    const pctStr = row.pct !== null ? `${row.pct >= 0 ? '+' : ''}${row.pct.toFixed(1)}%` : '-';
+
+    return `<tr>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${esc(row.jan)}</td>
+      <td><strong>${esc(row.name)}</strong></td>
+      <td>${badge}</td>
+      <td class="price-cell">${row.prev !== null ? fmtPrice(row.prev) : '-'}</td>
+      <td class="price-cell"><strong>${row.cur !== null ? fmtPrice(row.cur) : '-'}</strong></td>
+      <td class="price-cell" style="color:${row.diff > 0 ? 'var(--up)' : row.diff < 0 ? 'var(--down)' : 'inherit'}">
+        ${row.diff !== null ? (row.diff >= 0 ? '+' : '') + fmt(row.diff) : '-'}
+      </td>
+      <td class="price-cell" style="color:${row.pct > 0 ? 'var(--up)' : row.pct < 0 ? 'var(--down)' : 'inherit'}">
+        ${pctStr}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== Tab 2: Store Comparison =====
+function renderCompare() {
+  const d = parsedData;
+  const searchTerm = (document.getElementById('compareSearch').value || '').toLowerCase();
+  const colLimit = parseInt(document.getElementById('compareCols').value) || 0;
+  const highlight = document.getElementById('highlightMinMax').checked;
+
+  // Choose which date columns to show
+  let cols = d.dates.map((dt, i) => ({ i, label: dt }));
+  if (colLimit > 0) cols = cols.slice(-colLimit);
+
+  // Build header
+  const thead = document.getElementById('compareThead');
+  thead.innerHTML = `<tr>
+    <th>JANコード</th>
+    <th>品名</th>
+    ${cols.map(c => `<th class="price-cell"><div>${esc(c.label)}</div></th>`).join('')}
+  </tr>`;
+
+  // Filter rows
+  let rows = d.rows;
+  if (searchTerm) {
+    rows = rows.filter(r =>
+      r.name.toLowerCase().includes(searchTerm) ||
+      r.jan.toLowerCase().includes(searchTerm)
+    );
+  }
+
+  const tbody = document.getElementById('compareTbody');
+  tbody.innerHTML = rows.map(row => {
+    const prices = cols.map(c => row.prices[c.i]);
+    const validPrices = prices.filter(p => p !== null);
+    const maxP = validPrices.length ? Math.max(...validPrices) : null;
+    const minP = validPrices.length ? Math.min(...validPrices) : null;
+
+    const cells = prices.map(p => {
+      if (p === null) return `<td class="price-cell" style="color:var(--text-muted)">-</td>`;
+      let cls = 'price-cell';
+      if (highlight) {
+        if (p === maxP && maxP !== minP) cls += ' price-max';
+        else if (p === minP && maxP !== minP) cls += ' price-min';
+      }
+      return `<td class="${cls}">${fmtPrice(p)}</td>`;
+    });
+
+    return `<tr>
+      <td style="font-size:0.8rem;color:var(--text-muted);">${esc(row.jan)}</td>
+      <td><strong>${esc(row.name)}</strong></td>
+      ${cells.join('')}
+    </tr>`;
+  }).join('');
+}
+
+// ===== Tab 3: Price Graph =====
+function updateChips() {
+  // Just keep search bar responsive
+}
+
+function addToGraph() {
+  const term = document.getElementById('graphSearch').value.trim().toLowerCase();
+  if (!term) return;
+
+  const matches = parsedData.rows.filter(r =>
+    r.name.toLowerCase().includes(term) ||
+    r.jan.toLowerCase().includes(term)
+  );
+
+  if (matches.length === 0) {
+    alert('商品が見つかりませんでした。');
+    return;
+  }
+
+  matches.slice(0, 5).forEach(row => {
+    if (!graphProducts.find(p => p.jan === row.jan && p.name === row.name)) {
+      graphProducts.push(row);
+    }
+  });
+
+  document.getElementById('graphSearch').value = '';
+  renderGraph();
+}
+
+function removeFromGraph(idx) {
+  graphProducts.splice(idx, 1);
+  renderGraph();
+}
+
+function clearGraph() {
+  graphProducts = [];
+  renderGraph();
+}
+
+function renderGraph() {
+  const chips = document.getElementById('productChips');
+  chips.innerHTML = graphProducts.map((p, i) =>
+    `<span class="product-chip" onclick="removeFromGraph(${i})">
+      ${esc(p.name || p.jan)} ✕
+    </span>`
+  ).join('');
+
+  const noData = document.getElementById('chartNoData');
+  const wrapper = document.getElementById('chartWrapper');
+
+  if (graphProducts.length === 0) {
+    noData.style.display = 'block';
+    wrapper.style.display = 'none';
+    if (chart) { chart.destroy(); chart = null; }
+    return;
+  }
+
+  noData.style.display = 'none';
+  wrapper.style.display = 'block';
+
+  const labels = parsedData.dates;
+  const datasets = graphProducts.map((p, i) => ({
+    label: p.name || p.jan,
+    data: p.prices.map(v => v),
+    borderColor: COLORS[i % COLORS.length],
+    backgroundColor: COLORS[i % COLORS.length] + '22',
+    tension: 0.3,
+    pointRadius: 4,
+    pointHoverRadius: 6,
+    fill: false,
+    spanGaps: true
+  }));
+
+  if (chart) chart.destroy();
+
+  chart = new Chart(document.getElementById('priceChart'), {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const v = ctx.raw;
+              return ` ${ctx.dataset.label}: ${v !== null ? fmtPrice(v) : 'データなし'}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            maxRotation: 45,
+            font: { size: 11 }
+          }
+        },
+        y: {
+          ticks: {
+            callback: v => '¥' + v.toLocaleString()
+          }
+        }
+      }
+    }
+  });
+}
+
+// ===== Tab switching =====
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['changes', 'compare', 'graph'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+}
+
+// ===== Helpers =====
+function fmt(n) {
+  if (n === null || n === undefined) return '-';
+  return '¥' + Math.abs(n).toLocaleString();
+}
+
+function fmtPrice(n) {
+  return '¥' + n.toLocaleString();
+}
+
+function esc(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>
