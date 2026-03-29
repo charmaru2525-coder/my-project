@@ -109,10 +109,12 @@
       font-size: 12px;
       font-weight: 600;
     }
-    .badge-ns  { background: #d5f5e3; color: #1e8449; }
-    .badge-ps5 { background: #d6eaf8; color: #1a5276; }
-    .badge-sw  { background: #fef9e7; color: #7d6608; }
-    .badge-sp  { background: #f9ebea; color: #922b21; }
+    .badge-ns   { background: #d5f5e3; color: #1e8449; }
+    .badge-ps5  { background: #d6eaf8; color: #1a5276; }
+    .badge-sw   { background: #fef9e7; color: #7d6608; }
+    .badge-sp   { background: #f9ebea; color: #922b21; }
+    .badge-game { background: #e8daef; color: #6c3483; }
+    .badge-other{ background: #eaeded; color: #515a5a; }
 
     .rate {
       font-weight: 700;
@@ -176,6 +178,8 @@
           <option value="ps5">PS5</option>
           <option value="sw">ゲームソフト</option>
           <option value="sp">スマホ・タブレット</option>
+          <option value="game">ゲーム機</option>
+          <option value="other">その他</option>
         </select>
       </div>
       <div class="form-group" style="max-width:140px">
@@ -250,11 +254,66 @@
 
   // ---- ジャンル ----
   const GENRES = {
-    ns:  { label: 'Nintendo Switch', badge: 'badge-ns' },
-    ps5: { label: 'PS5',             badge: 'badge-ps5' },
-    sw:  { label: 'ゲームソフト',    badge: 'badge-sw' },
-    sp:  { label: 'スマホ・タブレット', badge: 'badge-sp' },
+    ns:   { label: 'Nintendo Switch',    badge: 'badge-ns'   },
+    ps5:  { label: 'PS5',                badge: 'badge-ps5'  },
+    sw:   { label: 'ゲームソフト',       badge: 'badge-sw'   },
+    sp:   { label: 'スマホ・タブレット', badge: 'badge-sp'   },
+    game: { label: 'ゲーム機',           badge: 'badge-game' },
+    other:{ label: 'その他',             badge: 'badge-other'},
   };
+
+  // ---- 初期データ ----
+  const INITIAL_PRODUCTS = [
+    { id: 'p001', name: 'Nintendo Switch 2 日本語',                     genre: 'ns',    price: 49980  },
+    { id: 'p002', name: 'Nintendo Switch 2 マリオセット 日本語',         genre: 'ns',    price: 53980  },
+    { id: 'p003', name: '有機 Nintendo Switch ネオン',                   genre: 'ns',    price: 37980  },
+    { id: 'p004', name: '有機 Nintendo Switch 白',                       genre: 'ns',    price: 37980  },
+    { id: 'p005', name: '有機 Nintendo Switch スプラトゥーン',           genre: 'ns',    price: 37980  },
+    { id: 'p006', name: '新型 Nintendo Switch ネオン',                   genre: 'ns',    price: 32978  },
+    { id: 'p007', name: '新型 Nintendo Switch グレー',                   genre: 'ns',    price: 32978  },
+    { id: 'p008', name: 'Nintendo Switch Lite グレー',                   genre: 'ns',    price: 22978  },
+    { id: 'p009', name: 'Nintendo Switch 2 Proコン',                     genre: 'ns',    price: 9980   },
+    { id: 'p010', name: 'Nintendo Switch Joy-Con 2 青/赤',               genre: 'ns',    price: 9878   },
+    { id: 'p011', name: 'PS5 新型モデル CFI-2000A01',                    genre: 'ps5',   price: 79980  },
+    { id: 'p012', name: 'PS5 デジタル 新型モデル CFI-2000B01',           genre: 'ps5',   price: 72980  },
+    { id: 'p013', name: 'PS5 Pro CFI-7000B01',                           genre: 'ps5',   price: 119980 },
+    { id: 'p014', name: 'PlayStation Portal リモートプレーヤー 白',      genre: 'ps5',   price: 29980  },
+    { id: 'p015', name: 'PS5 ワイヤレスコントローラー 白',               genre: 'ps5',   price: 9878   },
+    { id: 'p016', name: 'Xbox Series S',                                  genre: 'game',  price: 44978  },
+    { id: 'p017', name: 'Xbox Series S 1TB 白',                          genre: 'game',  price: 54978  },
+    { id: 'p018', name: 'Xbox Series X',                                  genre: 'game',  price: 74978  },
+    { id: 'p019', name: 'Xbox Series X 1TB デジタル',                    genre: 'game',  price: 74978  },
+    { id: 'p020', name: 'AirPods Pro 第2世代 TJV3J/A USB-C',            genre: 'sp',    price: 39800  },
+    { id: 'p021', name: 'iPad 第9世代 銀 64GB MK2L3J/A',               genre: 'sp',    price: 49800  },
+    { id: 'p022', name: 'iPad 第9世代 銀 256GB MK2P3J/A',              genre: 'sp',    price: 64800  },
+    { id: 'p023', name: 'iPhone 17 256GB 黒',                            genre: 'sp',    price: 129800 },
+    { id: 'p024', name: 'iPhone 17 Pro 256GB 青',                        genre: 'sp',    price: 159800 },
+    { id: 'p025', name: 'iPhone 17 Pro 512GB 青',                        genre: 'sp',    price: 179800 },
+    { id: 'p026', name: 'iPhone 17 Pro Max 256GB 青',                    genre: 'sp',    price: 189800 },
+    { id: 'p027', name: 'iPhone 17 Pro Max 512GB 青',                    genre: 'sp',    price: 209800 },
+    { id: 'p028', name: 'iPhone 17 Pro Max 1TB 青',                      genre: 'sp',    price: 239800 },
+    { id: 'p029', name: 'iPhone Air 256GB 黒',                           genre: 'sp',    price: 159800 },
+    { id: 'p030', name: 'iPhone 16 Pro 128GB 黒',                        genre: 'sp',    price: 159800 },
+    { id: 'p031', name: 'iPhone 16 Pro 256GB 黒',                        genre: 'sp',    price: 174800 },
+    { id: 'p032', name: 'iPhone 16 Pro Max 黒 256GB',                    genre: 'sp',    price: 189800 },
+    { id: 'p033', name: 'iPhone 16 Pro Max 黒 512GB',                    genre: 'sp',    price: 214800 },
+    { id: 'p034', name: 'SONY WF-1000XM5 黒',                           genre: 'sp',    price: 41800  },
+    { id: 'p035', name: 'SONY WF-1000XM5 銀',                           genre: 'sp',    price: 41800  },
+    { id: 'p036', name: 'Meta Quest 3 128GB',                             genre: 'sp',    price: 74800  },
+    { id: 'p037', name: 'Meta Quest 3 512GB',                             genre: 'sp',    price: 99800  },
+    { id: 'p038', name: 'Meta Quest 3S 128GB',                            genre: 'sp',    price: 48400  },
+    { id: 'p039', name: 'Meta Quest 3S 256GB',                            genre: 'sp',    price: 60500  },
+    { id: 'p040', name: 'FUJIFILM チェキ用フィルム 20枚入',              genre: 'other', price: 1980   },
+    { id: 'p041', name: 'フジカラー 写ルンです',                          genre: 'other', price: 1650   },
+    { id: 'p042', name: 'instax mini 12 チェキ 白',                      genre: 'other', price: 14300  },
+  ];
+
+  function seedInitialData() {
+    const data = load();
+    if (data.products.length > 0) return; // すでにデータあり → スキップ
+    data.products = INITIAL_PRODUCTS;
+    save(data);
+  }
 
   function genreBadge(g) {
     const genre = GENRES[g] || { label: g, badge: '' };
@@ -504,6 +563,7 @@
   }
 
   // ---- 初期化 ----
+  seedInitialData();
   document.getElementById('bb-date').valueAsDate = new Date();
   renderList();
 </script>
