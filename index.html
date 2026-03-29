@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>買取価格管理</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 16px 24px;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .tabs {
+      display: flex;
+      background: #34495e;
+    }
+    .tab {
+      padding: 12px 24px;
+      color: #bdc3c7;
+      cursor: pointer;
+      font-size: 14px;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab:hover { color: white; }
+    .tab.active { color: white; border-bottom-color: #3498db; }
+
+    .page { display: none; padding: 24px; max-width: 900px; margin: 0 auto; }
+    .page.active { display: block; }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    .card h2 {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      color: #2c3e50;
+      border-bottom: 2px solid #3498db;
+      padding-bottom: 8px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 160px;
+    }
+    .form-group label { font-size: 13px; color: #666; }
+    input, select {
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: #3498db; }
+
+    button {
+      padding: 9px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: #3498db; color: white; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-danger { background: #e74c3c; color: white; font-size: 12px; padding: 5px 10px; }
+    .btn-danger:hover { background: #c0392b; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      background: #f8f9fa;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 13px;
+      color: #555;
+      border-bottom: 2px solid #dee2e6;
+    }
+    td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+    tr:hover td { background: #fafbfc; }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-ns  { background: #d5f5e3; color: #1e8449; }
+    .badge-ps5 { background: #d6eaf8; color: #1a5276; }
+    .badge-sw  { background: #fef9e7; color: #7d6608; }
+    .badge-sp  { background: #f9ebea; color: #922b21; }
+
+    .rate {
+      font-weight: 700;
+    }
+    .rate-high { color: #27ae60; }
+    .rate-mid  { color: #e67e22; }
+    .rate-low  { color: #e74c3c; }
+
+    .select-product {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .select-product select { flex: 1; }
+
+    .empty {
+      text-align: center;
+      color: #aaa;
+      padding: 40px 0;
+      font-size: 14px;
+    }
+
+    .price-history td:last-child { text-align: right; }
+
+    #chartContainer { position: relative; height: 300px; }
+  </style>
+</head>
+<body>
+
+<header>買取価格管理</header>
+
+<div class="tabs">
+  <div class="tab active" onclick="showTab('list')">一覧</div>
+  <div class="tab" onclick="showTab('register')">商品登録</div>
+  <div class="tab" onclick="showTab('buyback')">買取価格入力</div>
+  <div class="tab" onclick="showTab('graph')">推移グラフ</div>
+</div>
+
+<!-- 一覧 -->
+<div id="tab-list" class="page active">
+  <div class="card">
+    <h2>商品一覧</h2>
+    <div id="listTable"><div class="empty">商品が登録されていません</div></div>
+  </div>
+</div>
+
+<!-- 商品登録 -->
+<div id="tab-register" class="page">
+  <div class="card">
+    <h2>商品登録</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>商品名</label>
+        <input type="text" id="reg-name" placeholder="例：Nintendo Switch 有機ELモデル">
+      </div>
+      <div class="form-group" style="max-width:180px">
+        <label>ジャンル</label>
+        <select id="reg-genre">
+          <option value="ns">Nintendo Switch</option>
+          <option value="ps5">PS5</option>
+          <option value="sw">ゲームソフト</option>
+          <option value="sp">スマホ・タブレット</option>
+        </select>
+      </div>
+      <div class="form-group" style="max-width:140px">
+        <label>定価（円）</label>
+        <input type="number" id="reg-price" placeholder="37980" min="0">
+      </div>
+      <button class="btn-primary" onclick="registerProduct()">登録</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>登録済み商品</h2>
+    <div id="regTable"><div class="empty">商品が登録されていません</div></div>
+  </div>
+</div>
+
+<!-- 買取価格入力 -->
+<div id="tab-buyback" class="page">
+  <div class="card">
+    <h2>買取価格入力</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>商品</label>
+        <select id="bb-product"><option value="">-- 商品を選択 --</option></select>
+      </div>
+      <div class="form-group" style="max-width:160px">
+        <label>日付</label>
+        <input type="date" id="bb-date">
+      </div>
+      <div class="form-group" style="max-width:140px">
+        <label>買取価格（円）</label>
+        <input type="number" id="bb-price" placeholder="15000" min="0">
+      </div>
+      <button class="btn-primary" onclick="addBuyback()">記録</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>買取価格履歴</h2>
+    <div id="bbHistory"><div class="empty">履歴がありません</div></div>
+  </div>
+</div>
+
+<!-- 推移グラフ -->
+<div id="tab-graph" class="page">
+  <div class="card">
+    <h2>買取価格推移</h2>
+    <div class="select-product">
+      <select id="graph-product" onchange="renderGraph()">
+        <option value="">-- 商品を選択 --</option>
+      </select>
+    </div>
+    <div id="chartContainer">
+      <canvas id="priceChart"></canvas>
+    </div>
+    <div id="graph-empty" class="empty" style="display:none">データがありません</div>
+  </div>
+</div>
+
+<script>
+  // ---- データ管理 ----
+  const STORAGE_KEY = 'buyback_tracker_v1';
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || { products: [], buybacks: [] }; }
+    catch { return { products: [], buybacks: [] }; }
+  }
+
+  function save(data) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  }
+
+  // ---- ジャンル ----
+  const GENRES = {
+    ns:  { label: 'Nintendo Switch', badge: 'badge-ns' },
+    ps5: { label: 'PS5',             badge: 'badge-ps5' },
+    sw:  { label: 'ゲームソフト',    badge: 'badge-sw' },
+    sp:  { label: 'スマホ・タブレット', badge: 'badge-sp' },
+  };
+
+  function genreBadge(g) {
+    const genre = GENRES[g] || { label: g, badge: '' };
+    return `<span class="badge ${genre.badge}">${genre.label}</span>`;
+  }
+
+  // ---- タブ ----
+  function showTab(name) {
+    document.querySelectorAll('.tab').forEach((t, i) => {
+      const names = ['list', 'register', 'buyback', 'graph'];
+      t.classList.toggle('active', names[i] === name);
+    });
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+
+    if (name === 'list')    renderList();
+    if (name === 'register') renderRegTable();
+    if (name === 'buyback') { renderProductSelect('bb-product'); renderBBHistory(); }
+    if (name === 'graph')   { renderProductSelect('graph-product'); renderGraph(); }
+  }
+
+  // ---- 商品登録 ----
+  function registerProduct() {
+    const name  = document.getElementById('reg-name').value.trim();
+    const genre = document.getElementById('reg-genre').value;
+    const price = parseInt(document.getElementById('reg-price').value, 10);
+
+    if (!name) return alert('商品名を入力してください');
+    if (!price || price <= 0) return alert('定価を入力してください');
+
+    const data = load();
+    data.products.push({ id: Date.now().toString(), name, genre, price });
+    save(data);
+
+    document.getElementById('reg-name').value = '';
+    document.getElementById('reg-price').value = '';
+    renderRegTable();
+    alert('登録しました');
+  }
+
+  function deleteProduct(id) {
+    if (!confirm('この商品と関連する買取履歴をすべて削除しますか？')) return;
+    const data = load();
+    data.products = data.products.filter(p => p.id !== id);
+    data.buybacks  = data.buybacks.filter(b => b.productId !== id);
+    save(data);
+    renderRegTable();
+  }
+
+  function renderRegTable() {
+    const data = load();
+    const el = document.getElementById('regTable');
+    if (!data.products.length) {
+      el.innerHTML = '<div class="empty">商品が登録されていません</div>';
+      return;
+    }
+    el.innerHTML = `<table>
+      <thead><tr><th>商品名</th><th>ジャンル</th><th>定価</th><th></th></tr></thead>
+      <tbody>${data.products.map(p => `
+        <tr>
+          <td>${esc(p.name)}</td>
+          <td>${genreBadge(p.genre)}</td>
+          <td>${p.price.toLocaleString()}円</td>
+          <td><button class="btn-danger" onclick="deleteProduct('${p.id}')">削除</button></td>
+        </tr>`).join('')}
+      </tbody></table>`;
+  }
+
+  // ---- 一覧 ----
+  function renderList() {
+    const data = load();
+    const el = document.getElementById('listTable');
+    if (!data.products.length) {
+      el.innerHTML = '<div class="empty">商品が登録されていません</div>';
+      return;
+    }
+
+    const rows = data.products.map(p => {
+      const history = data.buybacks.filter(b => b.productId === p.id).sort((a, b) => a.date > b.date ? 1 : -1);
+      const latest  = history.length ? history[history.length - 1] : null;
+      const rate    = latest ? Math.round(latest.price / p.price * 100) : null;
+      const rateClass = rate === null ? '' : rate >= 50 ? 'rate-high' : rate >= 30 ? 'rate-mid' : 'rate-low';
+      return `<tr>
+        <td>${esc(p.name)}</td>
+        <td>${genreBadge(p.genre)}</td>
+        <td>${p.price.toLocaleString()}円</td>
+        <td>${latest ? latest.price.toLocaleString() + '円' : '-'}</td>
+        <td>${latest ? `<span class="rate ${rateClass}">${rate}%</span>` : '-'}</td>
+        <td style="color:#aaa;font-size:12px">${latest ? latest.date : '-'}</td>
+      </tr>`;
+    });
+
+    el.innerHTML = `<table>
+      <thead><tr><th>商品名</th><th>ジャンル</th><th>定価</th><th>最新買取価格</th><th>買取率</th><th>更新日</th></tr></thead>
+      <tbody>${rows.join('')}</tbody></table>`;
+  }
+
+  // ---- 買取価格入力 ----
+  function renderProductSelect(selectId) {
+    const data = load();
+    const el = document.getElementById(selectId);
+    const current = el.value;
+    el.innerHTML = '<option value="">-- 商品を選択 --</option>' +
+      data.products.map(p => `<option value="${p.id}"${p.id === current ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+  }
+
+  function addBuyback() {
+    const productId = document.getElementById('bb-product').value;
+    const date      = document.getElementById('bb-date').value;
+    const price     = parseInt(document.getElementById('bb-price').value, 10);
+
+    if (!productId) return alert('商品を選択してください');
+    if (!date)      return alert('日付を入力してください');
+    if (!price || price <= 0) return alert('買取価格を入力してください');
+
+    const data = load();
+    data.buybacks.push({ id: Date.now().toString(), productId, date, price });
+    save(data);
+
+    document.getElementById('bb-price').value = '';
+    renderBBHistory();
+    alert('記録しました');
+  }
+
+  function deleteBuyback(id) {
+    if (!confirm('この履歴を削除しますか？')) return;
+    const data = load();
+    data.buybacks = data.buybacks.filter(b => b.id !== id);
+    save(data);
+    renderBBHistory();
+  }
+
+  function renderBBHistory() {
+    const data = load();
+    const el = document.getElementById('bbHistory');
+
+    const sorted = [...data.buybacks].sort((a, b) => b.date.localeCompare(a.date));
+    if (!sorted.length) {
+      el.innerHTML = '<div class="empty">履歴がありません</div>';
+      return;
+    }
+
+    const productMap = Object.fromEntries(data.products.map(p => [p.id, p]));
+    el.innerHTML = `<table class="price-history">
+      <thead><tr><th>日付</th><th>商品名</th><th>ジャンル</th><th>買取価格</th><th></th></tr></thead>
+      <tbody>${sorted.map(b => {
+        const p = productMap[b.productId];
+        if (!p) return '';
+        return `<tr>
+          <td>${b.date}</td>
+          <td>${esc(p.name)}</td>
+          <td>${genreBadge(p.genre)}</td>
+          <td>${b.price.toLocaleString()}円</td>
+          <td><button class="btn-danger" onclick="deleteBuyback('${b.id}')">削除</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  }
+
+  // ---- グラフ ----
+  let chartInstance = null;
+
+  function renderGraph() {
+    const productId = document.getElementById('graph-product').value;
+    const canvas    = document.getElementById('priceChart');
+    const emptyMsg  = document.getElementById('graph-empty');
+
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+
+    if (!productId) {
+      canvas.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      emptyMsg.textContent = '商品を選択してください';
+      return;
+    }
+
+    const data    = load();
+    const product = data.products.find(p => p.id === productId);
+    const history = data.buybacks
+      .filter(b => b.productId === productId)
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    if (!history.length) {
+      canvas.style.display = 'none';
+      emptyMsg.style.display = 'block';
+      emptyMsg.textContent = 'この商品の買取履歴がありません';
+      return;
+    }
+
+    canvas.style.display = 'block';
+    emptyMsg.style.display = 'none';
+
+    const labels = history.map(b => b.date);
+    const prices = history.map(b => b.price);
+
+    chartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: '買取価格',
+            data: prices,
+            borderColor: '#3498db',
+            backgroundColor: 'rgba(52,152,219,0.1)',
+            borderWidth: 2,
+            pointRadius: 5,
+            pointBackgroundColor: '#3498db',
+            tension: 0.3,
+            fill: true,
+          },
+          {
+            label: '定価',
+            data: labels.map(() => product.price),
+            borderColor: '#e74c3c',
+            borderWidth: 1,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            fill: false,
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}円`
+            }
+          }
+        },
+        scales: {
+          y: {
+            ticks: {
+              callback: v => v.toLocaleString() + '円'
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // ---- ユーティリティ ----
+  function esc(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ---- 初期化 ----
+  document.getElementById('bb-date').valueAsDate = new Date();
+  renderList();
+</script>
+</body>
+</html>
