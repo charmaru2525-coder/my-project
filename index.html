@@ -186,6 +186,10 @@
         <label>定価（円）</label>
         <input type="number" id="reg-price" placeholder="37980" min="0">
       </div>
+      <div class="form-group" style="max-width:150px">
+        <label>JANコード <span style="color:#aaa;font-weight:400">（任意）</span></label>
+        <input type="text" id="reg-jan" placeholder="4902370552874" maxlength="13">
+      </div>
       <button class="btn-primary" onclick="registerProduct()">登録</button>
     </div>
   </div>
@@ -264,48 +268,48 @@
 
   // ---- 初期データ ----
   const INITIAL_PRODUCTS = [
-    { id: 'p001', name: 'Nintendo Switch 2 日本語',                     genre: 'ns',    price: 49980  },
-    { id: 'p002', name: 'Nintendo Switch 2 マリオセット 日本語',         genre: 'ns',    price: 53980  },
-    { id: 'p003', name: '有機 Nintendo Switch ネオン',                   genre: 'ns',    price: 37980  },
-    { id: 'p004', name: '有機 Nintendo Switch 白',                       genre: 'ns',    price: 37980  },
-    { id: 'p005', name: '有機 Nintendo Switch スプラトゥーン',           genre: 'ns',    price: 37980  },
-    { id: 'p006', name: '新型 Nintendo Switch ネオン',                   genre: 'ns',    price: 32978  },
-    { id: 'p007', name: '新型 Nintendo Switch グレー',                   genre: 'ns',    price: 32978  },
-    { id: 'p008', name: 'Nintendo Switch Lite グレー',                   genre: 'ns',    price: 22978  },
-    { id: 'p009', name: 'Nintendo Switch 2 Proコン',                     genre: 'ns',    price: 9980   },
-    { id: 'p010', name: 'Nintendo Switch Joy-Con 2 青/赤',               genre: 'ns',    price: 9878   },
-    { id: 'p011', name: 'PS5 新型モデル CFI-2000A01',                    genre: 'ps5',   price: 79980  },
-    { id: 'p012', name: 'PS5 デジタル 新型モデル CFI-2000B01',           genre: 'ps5',   price: 72980  },
-    { id: 'p013', name: 'PS5 Pro CFI-7000B01',                           genre: 'ps5',   price: 119980 },
-    { id: 'p014', name: 'PlayStation Portal リモートプレーヤー 白',      genre: 'ps5',   price: 29980  },
-    { id: 'p015', name: 'PS5 ワイヤレスコントローラー 白',               genre: 'ps5',   price: 9878   },
-    { id: 'p016', name: 'Xbox Series S',                                  genre: 'game',  price: 44978  },
-    { id: 'p017', name: 'Xbox Series S 1TB 白',                          genre: 'game',  price: 54978  },
-    { id: 'p018', name: 'Xbox Series X',                                  genre: 'game',  price: 74978  },
-    { id: 'p019', name: 'Xbox Series X 1TB デジタル',                    genre: 'game',  price: 74978  },
-    { id: 'p020', name: 'AirPods Pro 第2世代 TJV3J/A USB-C',            genre: 'sp',    price: 39800  },
-    { id: 'p021', name: 'iPad 第9世代 銀 64GB MK2L3J/A',               genre: 'sp',    price: 49800  },
-    { id: 'p022', name: 'iPad 第9世代 銀 256GB MK2P3J/A',              genre: 'sp',    price: 64800  },
-    { id: 'p023', name: 'iPhone 17 256GB 黒',                            genre: 'sp',    price: 129800 },
-    { id: 'p024', name: 'iPhone 17 Pro 256GB 青',                        genre: 'sp',    price: 159800 },
-    { id: 'p025', name: 'iPhone 17 Pro 512GB 青',                        genre: 'sp',    price: 179800 },
-    { id: 'p026', name: 'iPhone 17 Pro Max 256GB 青',                    genre: 'sp',    price: 189800 },
-    { id: 'p027', name: 'iPhone 17 Pro Max 512GB 青',                    genre: 'sp',    price: 209800 },
-    { id: 'p028', name: 'iPhone 17 Pro Max 1TB 青',                      genre: 'sp',    price: 239800 },
-    { id: 'p029', name: 'iPhone Air 256GB 黒',                           genre: 'sp',    price: 159800 },
-    { id: 'p030', name: 'iPhone 16 Pro 128GB 黒',                        genre: 'sp',    price: 159800 },
-    { id: 'p031', name: 'iPhone 16 Pro 256GB 黒',                        genre: 'sp',    price: 174800 },
-    { id: 'p032', name: 'iPhone 16 Pro Max 黒 256GB',                    genre: 'sp',    price: 189800 },
-    { id: 'p033', name: 'iPhone 16 Pro Max 黒 512GB',                    genre: 'sp',    price: 214800 },
-    { id: 'p034', name: 'SONY WF-1000XM5 黒',                           genre: 'sp',    price: 41800  },
-    { id: 'p035', name: 'SONY WF-1000XM5 銀',                           genre: 'sp',    price: 41800  },
-    { id: 'p036', name: 'Meta Quest 3 128GB',                             genre: 'sp',    price: 74800  },
-    { id: 'p037', name: 'Meta Quest 3 512GB',                             genre: 'sp',    price: 99800  },
-    { id: 'p038', name: 'Meta Quest 3S 128GB',                            genre: 'sp',    price: 48400  },
-    { id: 'p039', name: 'Meta Quest 3S 256GB',                            genre: 'sp',    price: 60500  },
-    { id: 'p040', name: 'FUJIFILM チェキ用フィルム 20枚入',              genre: 'other', price: 1980   },
-    { id: 'p041', name: 'フジカラー 写ルンです',                          genre: 'other', price: 1650   },
-    { id: 'p042', name: 'instax mini 12 チェキ 白',                      genre: 'other', price: 14300  },
+    { id: 'p001', name: 'Nintendo Switch 2 日本語',                     genre: 'ns',    price: 49980,  jan: '' },
+    { id: 'p002', name: 'Nintendo Switch 2 マリオセット 日本語',         genre: 'ns',    price: 53980,  jan: '' },
+    { id: 'p003', name: '有機 Nintendo Switch ネオン',                   genre: 'ns',    price: 37980,  jan: '4902370548495' },
+    { id: 'p004', name: '有機 Nintendo Switch 白',                       genre: 'ns',    price: 37980,  jan: '4902370548501' },
+    { id: 'p005', name: '有機 Nintendo Switch スプラトゥーン',           genre: 'ns',    price: 37980,  jan: '4902370549003' },
+    { id: 'p006', name: '新型 Nintendo Switch ネオン',                   genre: 'ns',    price: 32978,  jan: '4902370543673' },
+    { id: 'p007', name: '新型 Nintendo Switch グレー',                   genre: 'ns',    price: 32978,  jan: '4902370543680' },
+    { id: 'p008', name: 'Nintendo Switch Lite グレー',                   genre: 'ns',    price: 22978,  jan: '4902370542929' },
+    { id: 'p009', name: 'Nintendo Switch 2 Proコン',                     genre: 'ns',    price: 9980,   jan: '' },
+    { id: 'p010', name: 'Nintendo Switch Joy-Con 2 青/赤',               genre: 'ns',    price: 9878,   jan: '' },
+    { id: 'p011', name: 'PS5 新型モデル CFI-2000A01',                    genre: 'ps5',   price: 79980,  jan: '4948872416658' },
+    { id: 'p012', name: 'PS5 デジタル 新型モデル CFI-2000B01',           genre: 'ps5',   price: 72980,  jan: '4948872416672' },
+    { id: 'p013', name: 'PS5 Pro CFI-7000B01',                           genre: 'ps5',   price: 119980, jan: '4948872415002' },
+    { id: 'p014', name: 'PlayStation Portal リモートプレーヤー 白',      genre: 'ps5',   price: 29980,  jan: '4948872415637' },
+    { id: 'p015', name: 'PS5 ワイヤレスコントローラー 白',               genre: 'ps5',   price: 9878,   jan: '4948872414951' },
+    { id: 'p016', name: 'Xbox Series S',                                  genre: 'game',  price: 44978,  jan: '4549576157337' },
+    { id: 'p017', name: 'Xbox Series S 1TB 白',                          genre: 'game',  price: 54978,  jan: '4549576195247' },
+    { id: 'p018', name: 'Xbox Series X',                                  genre: 'game',  price: 74978,  jan: '4549576157320' },
+    { id: 'p019', name: 'Xbox Series X 1TB デジタル',                    genre: 'game',  price: 74978,  jan: '' },
+    { id: 'p020', name: 'AirPods Pro 第2世代 TJV3J/A USB-C',            genre: 'sp',    price: 39800,  jan: '4549995400786' },
+    { id: 'p021', name: 'iPad 第9世代 銀 64GB MK2L3J/A',               genre: 'sp',    price: 49800,  jan: '4549995251715' },
+    { id: 'p022', name: 'iPad 第9世代 銀 256GB MK2P3J/A',              genre: 'sp',    price: 64800,  jan: '4549995251753' },
+    { id: 'p023', name: 'iPhone 17 256GB 黒',                            genre: 'sp',    price: 129800, jan: '' },
+    { id: 'p024', name: 'iPhone 17 Pro 256GB 青',                        genre: 'sp',    price: 159800, jan: '' },
+    { id: 'p025', name: 'iPhone 17 Pro 512GB 青',                        genre: 'sp',    price: 179800, jan: '' },
+    { id: 'p026', name: 'iPhone 17 Pro Max 256GB 青',                    genre: 'sp',    price: 189800, jan: '' },
+    { id: 'p027', name: 'iPhone 17 Pro Max 512GB 青',                    genre: 'sp',    price: 209800, jan: '' },
+    { id: 'p028', name: 'iPhone 17 Pro Max 1TB 青',                      genre: 'sp',    price: 239800, jan: '' },
+    { id: 'p029', name: 'iPhone Air 256GB 黒',                           genre: 'sp',    price: 159800, jan: '' },
+    { id: 'p030', name: 'iPhone 16 Pro 128GB 黒',                        genre: 'sp',    price: 159800, jan: '4549995437362' },
+    { id: 'p031', name: 'iPhone 16 Pro 256GB 黒',                        genre: 'sp',    price: 174800, jan: '4549995437379' },
+    { id: 'p032', name: 'iPhone 16 Pro Max 黒 256GB',                    genre: 'sp',    price: 189800, jan: '4549995437492' },
+    { id: 'p033', name: 'iPhone 16 Pro Max 黒 512GB',                    genre: 'sp',    price: 214800, jan: '4549995437508' },
+    { id: 'p034', name: 'SONY WF-1000XM5 黒',                           genre: 'sp',    price: 41800,  jan: '4548736143951' },
+    { id: 'p035', name: 'SONY WF-1000XM5 銀',                           genre: 'sp',    price: 41800,  jan: '4548736143975' },
+    { id: 'p036', name: 'Meta Quest 3 128GB',                             genre: 'sp',    price: 74800,  jan: '5060519425050' },
+    { id: 'p037', name: 'Meta Quest 3 512GB',                             genre: 'sp',    price: 99800,  jan: '5060519425067' },
+    { id: 'p038', name: 'Meta Quest 3S 128GB',                            genre: 'sp',    price: 48400,  jan: '5060519426750' },
+    { id: 'p039', name: 'Meta Quest 3S 256GB',                            genre: 'sp',    price: 60500,  jan: '5060519426767' },
+    { id: 'p040', name: 'FUJIFILM チェキ用フィルム 20枚入',              genre: 'other', price: 1980,   jan: '4547410315370' },
+    { id: 'p041', name: 'フジカラー 写ルンです',                          genre: 'other', price: 1650,   jan: '4547410397833' },
+    { id: 'p042', name: 'instax mini 12 チェキ 白',                      genre: 'other', price: 14300,  jan: '4547410482232' },
   ];
 
   function seedInitialData() {
@@ -339,16 +343,18 @@
     const name  = document.getElementById('reg-name').value.trim();
     const genre = document.getElementById('reg-genre').value;
     const price = parseInt(document.getElementById('reg-price').value, 10);
+    const jan   = document.getElementById('reg-jan').value.trim();
 
     if (!name) return alert('商品名を入力してください');
     if (!price || price <= 0) return alert('定価を入力してください');
 
     const data = load();
-    data.products.push({ id: Date.now().toString(), name, genre, price });
+    data.products.push({ id: Date.now().toString(), name, genre, price, jan });
     save(data);
 
     document.getElementById('reg-name').value = '';
     document.getElementById('reg-price').value = '';
+    document.getElementById('reg-jan').value = '';
     renderRegTable();
     alert('登録しました');
   }
@@ -370,12 +376,13 @@
       return;
     }
     el.innerHTML = `<table>
-      <thead><tr><th>商品名</th><th>ジャンル</th><th>定価</th><th></th></tr></thead>
+      <thead><tr><th>商品名</th><th>ジャンル</th><th>定価</th><th>JANコード</th><th></th></tr></thead>
       <tbody>${data.products.map(p => `
         <tr>
           <td>${esc(p.name)}</td>
           <td>${genreBadge(p.genre)}</td>
           <td>${p.price.toLocaleString()}円</td>
+          <td style="font-size:12px;color:#666;font-family:monospace">${p.jan || '-'}</td>
           <td><button class="btn-danger" onclick="deleteProduct('${p.id}')">削除</button></td>
         </tr>`).join('')}
       </tbody></table>`;
@@ -398,6 +405,7 @@
       return `<tr>
         <td>${esc(p.name)}</td>
         <td>${genreBadge(p.genre)}</td>
+        <td style="font-size:12px;color:#666;font-family:monospace">${p.jan || '-'}</td>
         <td>${p.price.toLocaleString()}円</td>
         <td>${latest ? latest.price.toLocaleString() + '円' : '-'}</td>
         <td>${latest ? `<span class="rate ${rateClass}">${rate}%</span>` : '-'}</td>
@@ -406,7 +414,7 @@
     });
 
     el.innerHTML = `<table>
-      <thead><tr><th>商品名</th><th>ジャンル</th><th>定価</th><th>最新買取価格</th><th>買取率</th><th>更新日</th></tr></thead>
+      <thead><tr><th>商品名</th><th>ジャンル</th><th>JANコード</th><th>定価</th><th>最新買取価格</th><th>買取率</th><th>更新日</th></tr></thead>
       <tbody>${rows.join('')}</tbody></table>`;
   }
 
